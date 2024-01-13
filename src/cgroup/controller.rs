@@ -1,54 +1,70 @@
-use std::{fs, process};
+use std::{cell::Cell, fs, process};
 
 use crate::cgroup::SystemCgroupInfo;
 use crate::common;
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 
 pub trait CgroupController {
-    fn initialize(&mut self) -> Result<()>;
+    fn set_pid(&self, pid: u32);
+    fn clean(&self) -> Result<()>;
     fn set_cpus(&self, cpus: f64) -> Result<()>;
 }
 
-pub fn new_with_cgroup_info(info: SystemCgroupInfo) -> Box<dyn CgroupController> {
-    if info.cgroup_root_ver == 1 {
-        Box::new(CgroupV1Controller::with_sys_cgroup_info(info))
-    } else {
-        Box::new(CgroupV1Controller::with_sys_cgroup_info(info))
+pub fn new_cgroup_controller(info: SystemCgroupInfo) -> Box<dyn CgroupController> {
+    match info.cgroup_root_ver {
+        1 => Box::new(CgroupV1Controller::with_sys_cgroup_info(info)),
+        2 => Box::new(CgroupV2Controller::with_sys_cgroup_info(info)),
+        _ => panic!("unexpected cgroup root ver"),
     }
 }
 
+#[derive(Default)]
 pub struct CgroupV1Controller {
-    initialized: bool,
-    pid: u32,
     sys_cgroup_info: SystemCgroupInfo,
+    pid: Cell<u32>,
+    controlled_cpu: Cell<bool>,
 }
 
 impl CgroupV1Controller {
     pub fn with_sys_cgroup_info(info: SystemCgroupInfo) -> Self {
         Self {
-            initialized: false,
-            pid: 0,
             sys_cgroup_info: info,
+            ..Default::default()
         }
+    }
+
+    fn get_cpu_control_dir(&self) -> String {
+        // work dir: /sys/fs/cgroup/cpu/limited-run/{pid}
+        format!(
+            "{}/limited-run/{}",
+            common::CGROUP_V1_CPU_DIR,
+            self.pid.get()
+        )
+    }
+
+    fn clean_cpus(&self) -> Result<()> {
+        let cpu_control_dir = self.get_cpu_control_dir();
+
+        // remove cgroup.procs
+        fs::write(format!("{}/cgroup.procs", cpu_control_dir), "")
+            .with_context(|| "failed to remove cgroup.proces")?;
+
+        // remove cpu control dir
+        fs::remove_dir(cpu_control_dir).with_context(|| "failed to remove cpu control dir")?;
+
+        Ok(())
     }
 }
 
 impl CgroupController for CgroupV1Controller {
-    fn initialize(&mut self) -> Result<()> {
-        if self.initialized {
-            return Ok(());
-        }
-
-        // get own pid
-        self.pid = get_pid()?;
-        self.initialized = true;
-
-        Ok(())
+    fn set_pid(&self, pid: u32) {
+        self.pid.set(pid);
     }
 
     fn set_cpus(&self, cpus: f64) -> Result<()> {
-        // work dir: /sys/fs/cgroup/cpu/limited-run/{pid}
-        let control_dir: String = format!("{}/limited-run/{}", common::CGROUP_V1_CPU_DIR, self.pid);
+        self.controlled_cpu.set(true);
+
+        let control_dir: String = self.get_cpu_control_dir();
         fs::create_dir_all(&control_dir)
             .with_context(|| format!("failed to create cgroup directory: {}", control_dir))?;
 
@@ -63,21 +79,26 @@ impl CgroupController for CgroupV1Controller {
         // set cgroup.procs
         fs::write(
             format!("{}/cgroup.procs", control_dir),
-            self.pid.to_string(),
+            self.pid.get().to_string(),
         )
         .with_context(|| "failed to write cgroup.procs")?;
+
+        Ok(())
+    }
+
+    fn clean(&self) -> Result<()> {
+        if self.controlled_cpu.get() {
+            // clean cpu
+            self.clean_cpus()?;
+        }
+
         Ok(())
     }
 }
 
-pub fn get_pid() -> Result<u32> {
-    let pid = process::id();
-    Ok(pid)
-}
-
 pub struct CgroupV2Controller {
     initialized: bool,
-    pid: u32,
+    pid: Cell<u32>,
     sys_cgroup_info: SystemCgroupInfo,
 }
 
@@ -85,26 +106,23 @@ impl CgroupV2Controller {
     pub fn with_sys_cgroup_info(info: SystemCgroupInfo) -> Self {
         Self {
             initialized: false,
-            pid: 0,
+            pid: Cell::new(0),
             sys_cgroup_info: info,
         }
     }
 }
 
 impl CgroupController for CgroupV2Controller {
-    fn initialize(&mut self) -> Result<()> {
-        if self.initialized {
-            return Ok(());
-        }
-
-        self.pid = get_pid().with_context(|| "failed to get pid")?;
-
-        self.initialized = true;
-        Ok(())
+    fn set_pid(&self, pid: u32) {
+        self.pid.set(pid);
     }
 
     fn set_cpus(&self, cpus: f64) -> Result<()> {
         unimplemented!();
         Ok(())
+    }
+
+    fn clean(&self) -> Result<()> {
+        unimplemented!();
     }
 }
