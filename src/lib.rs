@@ -31,7 +31,7 @@ pub fn run() -> Result<()> {
     }
 
     // create cgroup controller
-    let mut cgroup_controller = cgroup::new_with_cgroup_info(system_cgroup_info)?;
+    let mut cgroup_controller = cgroup::new_with_cgroup_info(system_cgroup_info);
 
     // init controller
     cgroup_controller.initialize()?;

@@ -4,7 +4,7 @@ pub struct CgroupPaths {
 }
 
 pub const CGROUP_ROOT_DIR: &'static str = "/sys/fs/cgroup";
-pub const CGROUP_V1_CPU_DIR: &'static str = "/sys/fs/cgroup/cpu/";
+pub const CGROUP_V1_CPU_DIR: &'static str = "/sys/fs/cgroup/cpu";
 
 pub const CGROUP_PATHS: CgroupPaths = CgroupPaths {
     root_dir: CGROUP_ROOT_DIR,
