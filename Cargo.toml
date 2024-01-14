@@ -12,3 +12,4 @@ clap = { version = "4.4.16", features = ["derive"] }
 ctrlc = "3.4.2"
 env_logger = "0.10.1"
 log = "0.4.20"
+sudo = "0.6.0"
