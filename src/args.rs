@@ -4,9 +4,13 @@ use clap::{CommandFactory, Parser};
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct CliArgs {
-    /// Number of CPUs (0.5)
+    /// Number of CPUs (examples: 0.5,1)
     #[arg(long, value_parser = cpus_parser)]
     pub cpus: Option<f64>,
+
+    /// Memory limit（examples: 10k,10m,10g）
+    #[arg(long, value_parser = memory_parser)]
+    pub memory: Option<String>,
 
     // commands to run
     pub commands: Vec<String>,
@@ -35,4 +39,33 @@ fn cpus_parser(s: &str) -> Result<f64, String> {
     } else {
         Ok(num)
     }
+}
+
+fn memory_parser(s: &str) -> Result<String, String> {
+    if s.len() == 0 {
+        return Err("invalid memory setting".to_string());
+    }
+
+    // check value
+    let value_s = &s[..s.len() - 1];
+    if !value_s.chars().all(|c| c.is_ascii_digit()) {
+        return Err("invalid memory setting".to_string());
+    }
+
+    // check unit
+    let unit = match s.chars().last().take() {
+        None => return Err("invalid memory setting".to_string()),
+        Some(unit) => unit,
+    };
+
+    if unit.is_ascii_digit() {
+        return Err("missing unit".to_string());
+    }
+
+    match unit {
+        'k' | 'K' | 'm' | 'M' | 'g' | 'G' => (),
+        _ => return Err("invalid memory unit".to_string()),
+    };
+
+    Ok(s.to_string())
 }

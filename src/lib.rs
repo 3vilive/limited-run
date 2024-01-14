@@ -3,7 +3,7 @@ pub mod cgroup;
 pub mod common;
 
 use std::{
-    process,
+    mem, process,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -15,7 +15,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use args::CliArgs;
 use cgroup::CgroupController;
-use log::debug;
+use log::{debug, error};
 
 pub fn run(args: args::CliArgs) -> Result<()> {
     let mut app = App::new(args)?;
@@ -69,6 +69,10 @@ impl App {
             self.cgroup_controller.set_cpus(cpus)?;
         }
 
+        if let Some(ref mem) = self.args.memory {
+            self.cgroup_controller.set_memory(mem.clone())?;
+        }
+
         self.cmd = Some(cmd);
 
         self.wait()
@@ -88,6 +92,15 @@ impl App {
                     break;
                 } else {
                     thread::sleep(Duration::from_millis(1));
+                }
+            }
+        }
+
+        if term.load(Ordering::Relaxed) {
+            // received term
+            if let Some(ref mut cmd) = self.cmd {
+                if let Err(e) = cmd.kill() {
+                    error!("failed to kill cmd: {}", e);
                 }
             }
         }
