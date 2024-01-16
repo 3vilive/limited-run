@@ -30,16 +30,19 @@ impl CgroupV1Controller {
         common::get_cgroup_v1_control_dir(common::CGroupV1SubSystem::Memory, self.pid.get())
     }
 
-    fn append_pid_to_tasks(&self, control_dir: &str) -> Result<()> {
-        fs::write(format!("{}/tasks", control_dir), self.pid.get().to_string())
-            .with_context(|| "failed to write tasks")
+    fn append_pid_to_procs(&self, control_dir: &str) -> Result<()> {
+        fs::write(
+            format!("{}/cgroup.procs", control_dir),
+            self.pid.get().to_string(),
+        )
+        .with_context(|| "failed to write cgroup.procs")
     }
 
-    fn wait_tasks_be_empty(&self, control_dir: &str) -> Result<()> {
-        let tasks_path = format!("{}/tasks", control_dir);
+    fn wait_procs_be_empty(&self, control_dir: &str) -> Result<()> {
+        let procs_path = format!("{}/cgroup.procs", control_dir);
         loop {
-            let content = fs::read_to_string(&tasks_path)
-                .with_context(|| format!("failed to read {}", tasks_path))?;
+            let content = fs::read_to_string(&procs_path)
+                .with_context(|| format!("failed to read {}", procs_path))?;
             if content.is_empty() {
                 break;
             } else {
@@ -58,8 +61,8 @@ impl CgroupV1Controller {
 
         let control_dir = self.get_cpu_control_dir();
 
-        // wait tasks be empty
-        self.wait_tasks_be_empty(&control_dir)?;
+        // wait procs be empty
+        self.wait_procs_be_empty(&control_dir)?;
 
         // remove cgroup dir
         fs::remove_dir(&control_dir)
@@ -75,8 +78,8 @@ impl CgroupV1Controller {
 
         let control_dir = self.get_memory_control_dir();
 
-        // wait tasks be empty
-        self.wait_tasks_be_empty(&control_dir)?;
+        // wait procs be empty
+        self.wait_procs_be_empty(&control_dir)?;
 
         // remove cgroup dir
         fs::remove_dir(&control_dir)
@@ -108,7 +111,7 @@ impl CgroupController for CgroupV1Controller {
         .with_context(|| "failed to set cpu.cfs_quota_us")?;
 
         // set tasks
-        self.append_pid_to_tasks(&control_dir)?;
+        self.append_pid_to_procs(&control_dir)?;
 
         Ok(())
     }
@@ -126,7 +129,7 @@ impl CgroupController for CgroupV1Controller {
             .with_context(|| "failed to set memory.limit_in_bytes")?;
 
         // set tasks
-        self.append_pid_to_tasks(&control_dir)?;
+        self.append_pid_to_procs(&control_dir)?;
 
         Ok(())
     }
