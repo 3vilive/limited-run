@@ -2,7 +2,7 @@ use std::{cell::Cell, fs, thread, time::Duration};
 
 use anyhow::{Context, Result};
 
-use crate::{cgroup::SystemCgroupInfo, common};
+use crate::common;
 
 use super::CgroupController;
 
@@ -14,7 +14,7 @@ pub struct CgroupV1Controller {
 }
 
 impl CgroupV1Controller {
-    pub fn with_sys_cgroup_info(_info: SystemCgroupInfo) -> Self {
+    pub fn new() -> Self {
         Self {
             ..Default::default()
         }

@@ -20,7 +20,7 @@ pub fn parse_cli_args() -> CliArgs {
     let args = CliArgs::parse();
 
     // check commands
-    if args.commands.len() == 0 {
+    if args.commands.is_empty() {
         let mut cmd = CliArgs::command();
         cmd.error(ErrorKind::MissingRequiredArgument, "commands is required")
             .exit()
@@ -42,7 +42,7 @@ fn cpus_parser(s: &str) -> Result<f64, String> {
 }
 
 fn memory_parser(s: &str) -> Result<String, String> {
-    if s.len() == 0 {
+    if s.is_empty() {
         return Err("invalid memory setting".to_string());
     }
 

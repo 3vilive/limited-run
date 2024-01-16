@@ -1,11 +1,9 @@
-use std::cell::Cell;
-
 mod cgroup_v1;
 mod cgroup_v2;
 
 use crate::cgroup::SystemCgroupInfo;
-use crate::common;
-use anyhow::{Context, Ok, Result};
+
+use anyhow::Result;
 use cgroup_v1::CgroupV1Controller;
 use cgroup_v2::CgroupV2Controller;
 
@@ -18,8 +16,8 @@ pub trait CgroupController {
 
 pub fn new_cgroup_controller(info: SystemCgroupInfo) -> Box<dyn CgroupController> {
     match info.cgroup_root_ver {
-        1 => Box::new(CgroupV1Controller::with_sys_cgroup_info(info)),
-        2 => Box::new(CgroupV2Controller::with_sys_cgroup_info(info)),
+        1 => Box::new(CgroupV1Controller::new()),
+        2 => Box::new(CgroupV2Controller::new()),
         _ => panic!("unexpected cgroup root ver"),
     }
 }

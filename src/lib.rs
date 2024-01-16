@@ -3,7 +3,7 @@ pub mod cgroup;
 pub mod common;
 
 use std::{
-    mem, process,
+    process,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,

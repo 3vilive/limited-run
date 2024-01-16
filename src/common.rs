@@ -3,9 +3,9 @@ pub struct CgroupPaths {
     pub v1_cpu_dir: &'static str,
 }
 
-pub const CGROUP_ROOT_DIR: &'static str = "/sys/fs/cgroup";
-pub const CGROUP_V1_CPU_DIR: &'static str = "/sys/fs/cgroup/cpu";
-pub const CGROUP_V1_MEMORY_DIR: &'static str = "/sys/fs/cgroup/memory";
+pub const CGROUP_ROOT_DIR: &str = "/sys/fs/cgroup";
+pub const CGROUP_V1_CPU_DIR: &str = "/sys/fs/cgroup/cpu";
+pub const CGROUP_V1_MEMORY_DIR: &str = "/sys/fs/cgroup/memory";
 
 #[derive(Debug)]
 pub enum CGroupV1SubSystem {

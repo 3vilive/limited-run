@@ -17,5 +17,5 @@ sudo limited-run --cpus=0.5 --memory=512M -- sha1sum /dev/zero
   - [x] limit cpu
   - [x] limit memory
 - [ ] cgroup v2
-  - [ ] limit cpu
-  - [ ] limit memory
+  - [x] limit cpu
+  - [x] limit memory
